@@ -1,16 +1,19 @@
 package agent;
 
 import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
 import negotiator.AgentID;
 import negotiator.Bid;
+import negotiator.BidHistory;
 import negotiator.Deadline;
 import negotiator.actions.Accept;
 import negotiator.actions.Action;
 import negotiator.actions.Offer;
+import negotiator.bidding.BidDetails;
 import negotiator.issue.Issue;
 import negotiator.issue.IssueDiscrete;
 import negotiator.issue.IssueInteger;
@@ -94,10 +97,10 @@ public class Agent extends AbstractNegotiationParty {
 						return new Accept(getPartyId(), lastReceivedBid);
 					
 					// Offer the last opponent's second to last bid. Just for giggles. We will do something else.
-					ArrayList<Bid> hist = new ArrayList<Bid>();
+					List<BidDetails> hist = new ArrayList<BidDetails>();
 					if(this.enemies.get(lastReceivedID) != null)
-						hist = this.enemies.get(lastReceivedID).getHistory();
-					Bid lastHistBid = (Bid) hist.get(hist.size() - 2);
+						hist = this.enemies.get(lastReceivedID).getBidHistory().getHistory();
+					Bid lastHistBid = (Bid)((BidDetails) hist.get(hist.size() - 2)).getBid();
 					if (lastHistBid != null)
 						return new Offer(this.getPartyId(), lastHistBid);
 					
@@ -155,11 +158,12 @@ public class Agent extends AbstractNegotiationParty {
 		if (action instanceof Offer) {
 			lastReceivedBid = ((Offer) action).getBid();
 			lastReceivedID = sender;
+			BidDetails lastReceivedBidDetails = new BidDetails(lastReceivedBid, getUtility(lastReceivedBid), this.getTimeLine().getTime());
 			
 			// Add the last received bid to the history of its agent.
 			if(this.enemies.get(lastReceivedID) == null)
 				this.enemies.put(lastReceivedID, new Opponent(lastReceivedID));
-			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBid);
+			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBidDetails);
 		}
 	}
 
