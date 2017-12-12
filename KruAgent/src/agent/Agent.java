@@ -98,11 +98,17 @@ public class Agent extends AbstractNegotiationParty {
 					
 					// Offer the last opponent's second to last bid. Just for giggles. We will do something else.
 					List<BidDetails> hist = new ArrayList<BidDetails>();
+//					if(this.enemies.get(lastReceivedID) != null)
+//						hist = this.enemies.get(lastReceivedID).getBidHistory().getHistory();
+//					Bid lastHistBid = (Bid)((BidDetails) hist.get(hist.size() - 2)).getBid();
+//					if (lastHistBid != null)
+//						return new Offer(this.getPartyId(), lastHistBid);
+					Bid opBestBid = null;
 					if(this.enemies.get(lastReceivedID) != null)
-						hist = this.enemies.get(lastReceivedID).getBidHistory().getHistory();
-					Bid lastHistBid = (Bid)((BidDetails) hist.get(hist.size() - 2)).getBid();
-					if (lastHistBid != null)
-						return new Offer(this.getPartyId(), lastHistBid);
+						opBestBid = (Bid)((BidDetails) this.enemies.get(lastReceivedID).getBidHistory().getBestBidDetails()).getBid();
+					if(this.getUtility(opBestBid) >= MINIMUM_BID_UTILITY) {
+						return new Offer(this.getPartyId(), opBestBid);
+					}
 					
 					// If all fails, offer a random(above a certain threshold) bid.
 					return new Offer(this.getPartyId(), randBid);
@@ -111,7 +117,6 @@ public class Agent extends AbstractNegotiationParty {
 				return new Offer(this.getPartyId(), BestWeCanDo);
 			}
 		}
-		
 	}
 	
 	// Wrapper for getMaxUtilityBid, so we can handle the exception.
