@@ -11,6 +11,8 @@ import negotiator.utility.UtilitySpace;
 public class Opponent {
 	public AgentID opponentID;
 	public BidHistory bidHistory = new BidHistory();
+	public double acceptanceThreshold;
+	public Bid acceptedBid;
 	
 	// Constructor.
 	public Opponent(AgentID id) {

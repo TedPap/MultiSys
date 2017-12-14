@@ -28,8 +28,8 @@ import negotiator.utility.AbstractUtilitySpace;
 
 public class Agent extends AbstractNegotiationParty {
 
-	private static double MINIMUM_BID_UTILITY = 0.7;
-	private static double CHILL_TIME = 0.8;
+	private double MINIMUM_BID_UTILITY = 0.7;
+	private double CHILL_TIME = 0.8;
 	
 	private Bid lastReceivedBid = null;
 	private AgentID lastReceivedID = null;
@@ -92,17 +92,13 @@ public class Agent extends AbstractNegotiationParty {
 				}
 				// When time is running out chill a bit.
 				if(this.timeToChill()) {
+					
 					// Accept any bid above a minimum threshold.
 					if(this.getUtility(lastReceivedBid) >= MINIMUM_BID_UTILITY) 
 						return new Accept(getPartyId(), lastReceivedBid);
 					
-					// Offer the last opponent's second to last bid. Just for giggles. We will do something else.
-					List<BidDetails> hist = new ArrayList<BidDetails>();
-//					if(this.enemies.get(lastReceivedID) != null)
-//						hist = this.enemies.get(lastReceivedID).getBidHistory().getHistory();
-//					Bid lastHistBid = (Bid)((BidDetails) hist.get(hist.size() - 2)).getBid();
-//					if (lastHistBid != null)
-//						return new Offer(this.getPartyId(), lastHistBid);
+					// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.
+					// TODO
 					Bid opBestBid = null;
 					if(this.enemies.get(lastReceivedID) != null)
 						opBestBid = (Bid)((BidDetails) this.enemies.get(lastReceivedID).getBidHistory().getBestBidDetails()).getBid();
@@ -136,6 +132,8 @@ public class Agent extends AbstractNegotiationParty {
 		
 		List<Issue> issues = utilitySpace.getDomain().getIssues();
 		Random randomnr = new Random();
+		double limit = this.getTimeLine().getTime() >= 0.78 ? Math.exp(0.78-this.getTimeLine().getTime()) : 0.95;
+		System.out.println(limit);
 
 		Bid bid = null;
 		do {
@@ -145,7 +143,8 @@ public class Agent extends AbstractNegotiationParty {
 				values.put(lIssue.getNumber(), lIssueDiscrete.getValue(optionIndex));
 			}
 			bid = new Bid(utilitySpace.getDomain(), values);
-		} while (getUtility(bid) < MINIMUM_BID_UTILITY);
+//		} while (getUtility(bid) < MINIMUM_BID_UTILITY);
+		} while(getUtility(bid) < limit);
 
 		return bid;
 	}
@@ -169,6 +168,14 @@ public class Agent extends AbstractNegotiationParty {
 			if(this.enemies.get(lastReceivedID) == null)
 				this.enemies.put(lastReceivedID, new Opponent(lastReceivedID));
 			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBidDetails);
+		}
+		else if(action instanceof Accept) {
+			System.out.println("ACCEPTANCE");
+			lastReceivedBid = ((Accept) action).getBid();
+			lastReceivedID = sender;
+			this.enemies.get(lastReceivedID).acceptanceThreshold = this.getUtility(lastReceivedBid);
+			this.enemies.get(lastReceivedID).acceptedBid = lastReceivedBid;
+			System.out.println(this.enemies.get(lastReceivedID).acceptanceThreshold);
 		}
 	}
 
