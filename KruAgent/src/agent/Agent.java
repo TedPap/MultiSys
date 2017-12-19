@@ -9,6 +9,7 @@ import java.util.Random;
 import negotiator.AgentID;
 import negotiator.Bid;
 import negotiator.BidHistory;
+import negotiator.BidIterator;
 import negotiator.Deadline;
 import negotiator.actions.Accept;
 import negotiator.actions.Action;
@@ -28,8 +29,8 @@ import negotiator.utility.AbstractUtilitySpace;
 
 public class Agent extends AbstractNegotiationParty {
 
-	private double MINIMUM_BID_UTILITY = 0.7;
-	private double CHILL_TIME = 0.8;
+	private double MINIMUM_BID_UTILITY = 0.65;
+	private double CHILL_TIME = 0.95;
 	
 	private Bid lastReceivedBid = null;
 	private AgentID lastReceivedID = null;
@@ -48,6 +49,7 @@ public class Agent extends AbstractNegotiationParty {
 
 		// if you need to initialize some variables, please initialize them
 		// below
+		
 
 	}
 
@@ -160,17 +162,19 @@ public class Agent extends AbstractNegotiationParty {
 
 		BidHistory bh = this.enemies.get(lastReceivedID).getBidHistory();
 		BidDetails bid_d1 = bh.getWorstBidDetails();
-		double util1 = bid_d1.getMyUndiscountedUtil();
+		double util1 = getUtility(bid_d1.getBid());
 		double util2 = bh.getAverageUtility();
 		double dif = util2-util1;
 		//System.out.println(util1 + "  " + util2 + "  " + dif);
 		
 		double offset = util1 + dif;
-		BidHistory worstBidSet = bh.filterBetweenUtility(util1-0.01, util2);
+		BidHistory worstBidSet = bh.filterBetweenUtility(util1-0.001, util2+0.0001);
 		double worstBidProbability = (double)worstBidSet.size() / (double)bh.size();
-		System.out.println(bh.size() +" , "+worstBidProbability);
+		//System.out.println(bh.size() +" , "+worstBidProbability);
 		//System.out.println(worstBidSet.size() );
 		//System.out.println(bh.size() );
+		//System.out.println((double)worstBidSet.size() );
+		System.out.println((double)bh.size() );
 	}
 	
 	// Receive a message from the server, set globals and add it to the opponent's bid history.
@@ -182,8 +186,16 @@ public class Agent extends AbstractNegotiationParty {
 			BidDetails lastReceivedBidDetails = new BidDetails(lastReceivedBid, getUtility(lastReceivedBid), this.getTimeLine().getTime());
 			
 			// Add the last received bid to the history of its agent.
-			if(this.enemies.get(lastReceivedID) == null)
+			if(this.enemies.get(lastReceivedID) == null) {
 				this.enemies.put(lastReceivedID, new Opponent(lastReceivedID));
+				nyezz();
+			}
+			if (getUtility(lastReceivedBid)> MINIMUM_BID_UTILITY ) {
+				int i = this.enemies.get(lastReceivedID).bidMap.get(lastReceivedBid).intValue();
+				i++;
+				this.enemies.get(lastReceivedID).bidMap.replace(lastReceivedBid, new Integer(i));
+				System.out.println(i);
+			}
 			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBidDetails);
 		}
 		else if(action instanceof Accept) {
@@ -193,11 +205,27 @@ public class Agent extends AbstractNegotiationParty {
 			this.enemies.get(lastReceivedID).acceptanceThreshold = this.getUtility(lastReceivedBid);
 			this.enemies.get(lastReceivedID).acceptedBid = lastReceivedBid;
 			//System.out.println(this.enemies.get(lastReceivedID).acceptanceThreshold);
+
+			if (getUtility(lastReceivedBid)> MINIMUM_BID_UTILITY ) {
+				int i = this.enemies.get(lastReceivedID).bidMap.get(lastReceivedBid).intValue();
+				i++;
+				this.enemies.get(lastReceivedID).bidMap.replace(lastReceivedBid, new Integer(i));
+				System.out.println(i);
+			}
 		}
 		double time = this.getTimeLine().getTime();
 		if (time>0.01) analyzeHistory();
 	}
 
+	public void nyezz () {
+		BidIterator bi = new BidIterator(this.utilitySpace.getDomain());
+		while(bi.hasNext()) {
+			Bid bid = bi.next();
+			if (getUtility(bid)>MINIMUM_BID_UTILITY) {
+				this.enemies.get(lastReceivedID).bidMap.put(bid, new Integer(0));
+			}
+		}
+	}
 
 	public String getDescription() {
 		return "FART";

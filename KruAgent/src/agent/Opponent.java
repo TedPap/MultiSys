@@ -1,6 +1,8 @@
 package agent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+
 import negotiator.AgentID;
 import negotiator.Bid;
 import negotiator.BidHistory;
@@ -13,6 +15,7 @@ public class Opponent {
 	public BidHistory bidHistory = new BidHistory();
 	public double acceptanceThreshold;
 	public Bid acceptedBid;
+	public HashMap<Bid, Integer> bidMap = new HashMap<Bid, Integer>();
 	
 	// Constructor.
 	public Opponent(AgentID id) {
