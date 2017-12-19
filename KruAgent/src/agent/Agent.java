@@ -43,8 +43,8 @@ public class Agent extends AbstractNegotiationParty {
 
 		super.init(info);
 
-		System.out.println("Discount Factor is " + info.getUtilitySpace().getDiscountFactor());
-		System.out.println("Reservation Value is " + info.getUtilitySpace().getReservationValueUndiscounted());
+		//System.out.println("Discount Factor is " + info.getUtilitySpace().getDiscountFactor());
+		//System.out.println("Reservation Value is " + info.getUtilitySpace().getReservationValueUndiscounted());
 
 		// if you need to initialize some variables, please initialize them
 		// below
@@ -133,7 +133,7 @@ public class Agent extends AbstractNegotiationParty {
 		List<Issue> issues = utilitySpace.getDomain().getIssues();
 		Random randomnr = new Random();
 		double limit = this.getTimeLine().getTime() >= 0.78 ? Math.exp(0.78-this.getTimeLine().getTime()) : 0.95;
-		System.out.println(limit);
+		//System.out.println(limit);
 
 		Bid bid = null;
 		do {
@@ -163,7 +163,14 @@ public class Agent extends AbstractNegotiationParty {
 		double util1 = bid_d1.getMyUndiscountedUtil();
 		double util2 = bh.getAverageUtility();
 		double dif = util2-util1;
-		System.out.println(util1 + "  " + util2 + "  " + dif);
+		//System.out.println(util1 + "  " + util2 + "  " + dif);
+		
+		double offset = util1 + dif;
+		BidHistory worstBidSet = bh.filterBetweenUtility(util1-0.01, util2);
+		double worstBidProbability = (double)worstBidSet.size() / (double)bh.size();
+		System.out.println(bh.size() +" , "+worstBidProbability);
+		//System.out.println(worstBidSet.size() );
+		//System.out.println(bh.size() );
 	}
 	
 	// Receive a message from the server, set globals and add it to the opponent's bid history.
@@ -180,15 +187,15 @@ public class Agent extends AbstractNegotiationParty {
 			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBidDetails);
 		}
 		else if(action instanceof Accept) {
-			System.out.println("ACCEPTANCE");
+			//System.out.println("ACCEPTANCE");
 			lastReceivedBid = ((Accept) action).getBid();
 			lastReceivedID = sender;
 			this.enemies.get(lastReceivedID).acceptanceThreshold = this.getUtility(lastReceivedBid);
 			this.enemies.get(lastReceivedID).acceptedBid = lastReceivedBid;
-			System.out.println(this.enemies.get(lastReceivedID).acceptanceThreshold);
+			//System.out.println(this.enemies.get(lastReceivedID).acceptanceThreshold);
 		}
 		double time = this.getTimeLine().getTime();
-		if (time>0.2) analyzeHistory();
+		if (time>0.01) analyzeHistory();
 	}
 
 
