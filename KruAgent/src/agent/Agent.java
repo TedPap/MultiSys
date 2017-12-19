@@ -155,6 +155,16 @@ public class Agent extends AbstractNegotiationParty {
 			return false;
 		return true;
 	}
+
+	public void analyzeHistory() {
+
+		BidHistory bh = this.enemies.get(lastReceivedID).getBidHistory();
+		BidDetails bid_d1 = bh.getWorstBidDetails();
+		double util1 = bid_d1.getMyUndiscountedUtil();
+		double util2 = bh.getAverageUtility();
+		double dif = util2-util1;
+		System.out.println(util1 + "  " + util2 + "  " + dif);
+	}
 	
 	// Receive a message from the server, set globals and add it to the opponent's bid history.
 	public void receiveMessage(AgentID sender, Action action) {
@@ -177,6 +187,8 @@ public class Agent extends AbstractNegotiationParty {
 			this.enemies.get(lastReceivedID).acceptedBid = lastReceivedBid;
 			System.out.println(this.enemies.get(lastReceivedID).acceptanceThreshold);
 		}
+		double time = this.getTimeLine().getTime();
+		if (time>0.2) analyzeHistory();
 	}
 
 
