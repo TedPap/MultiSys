@@ -16,6 +16,7 @@ public class Opponent {
 	public double acceptanceThreshold;
 	public Bid acceptedBid;
 	public HashMap<Bid, Integer> bidMap = new HashMap<Bid, Integer>();
+	public String opponentType = null;
 	
 	// Constructor.
 	public Opponent(AgentID id) {
@@ -30,6 +31,10 @@ public class Opponent {
 	// Add a bid to the opponent's bid history.
 	public void addToHistory(BidDetails bid) {
 		this.bidHistory.add(bid);
+	}
+	
+	public void setType(String opType) {
+		this.opponentType = opType;
 	}
 
 }
