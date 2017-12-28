@@ -3,7 +3,9 @@ package agent;
 import java.util.ArrayList;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
@@ -22,6 +24,7 @@ import negotiator.issue.IssueDiscrete;
 import negotiator.issue.IssueInteger;
 import negotiator.issue.IssueReal;
 import negotiator.issue.Value;
+import negotiator.issue.ValueDiscrete;
 import negotiator.issue.ValueInteger;
 import negotiator.issue.ValueReal;
 import negotiator.parties.AbstractNegotiationParty;
@@ -80,12 +83,11 @@ public class Agent extends AbstractNegotiationParty {
 			return new Offer(getPartyId(), BestWeCanDo);
 		} 
 		else {
-
-			Bid bid = getNextBid();
+			Bid nextBid = getNextBid();
 			
 			// Check if opponent's type is decided and change strategy.
 			if(this.enemies.get(lastReceivedID).opponentType != null) {
-				System.out.println(this.enemies.get(lastReceivedID).opponentType);
+				//System.out.println(this.enemies.get(lastReceivedID).opponentType);
 				
 				if(boulwares >= 1 && conceders+coops == 0) {
 					// TODO
@@ -101,34 +103,37 @@ public class Agent extends AbstractNegotiationParty {
 					//return new Offer(this.getPartyId(), BestWeCanDo);
 				}
 			}
+			
 			// When time is running out chill a bit.
 			if(this.timeToChill()) {
-				
 				// Accept any bid above a minimum threshold.
 				if(this.getUtility(lastReceivedBid) >= MINIMUM_BID_UTILITY) 
 					return new Accept(getPartyId(), lastReceivedBid);
 				
-				// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.
-				Bid opBestBid = null;
-				double bestBidVal = 0;
-				Bid tempBestBid = null;
-				for(Entry<AgentID, Opponent> entry : this.enemies.entrySet()) {
-					tempBestBid = (Bid)((BidDetails) entry.getValue().getBidHistory().getBestBidDetails()).getBid();
-					if(this.getUtility(tempBestBid) > bestBidVal) {
-						bestBidVal = this.getUtility(tempBestBid);
-						opBestBid = tempBestBid;
-					}
-				}
-				if(this.getUtility(opBestBid) >= MINIMUM_BID_UTILITY) {
-					return new Offer(this.getPartyId(), opBestBid);
-				}
+				// Offer Generation Strategies
+				String strg = "frequency";
 				
-				// Return next bid closest to the bidLimit
-				if(bid != null)
-					return new Offer(this.getPartyId(), bid);
-				
-				// If all fails, offer a random(above a certain threshold) bid.
-				return new Offer(this.getPartyId(), randBid);
+				switch (strg) {
+				case "opBest":
+					// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.				
+					Bid opBestBid = OfferOpponentsBestBid();
+					if (opBestBid != null)
+						return new Offer(this.getPartyId(), opBestBid);
+					break;
+				case "frequency":
+					Bid freqBid = OfferFrequencyBid();
+					if (freqBid != null)
+						return new Offer(this.getPartyId(), freqBid);
+					break;
+				case "next":
+					// Return next bid closest to the bidLimit
+					if(nextBid != null)
+						return new Offer(this.getPartyId(), nextBid);
+					break;
+				default:
+					// If all fails, offer a random(above a certain threshold) bid.
+					return new Offer(this.getPartyId(), randBid);
+				}
 			}
 		}
 		return new Offer(this.getPartyId(), BestWeCanDo);
@@ -169,15 +174,26 @@ public class Agent extends AbstractNegotiationParty {
 			// Add the last received bid to the history of its agent and initialize agent's bidMap.
 			if(this.enemies.get(lastReceivedID) == null) {
 				this.enemies.put(lastReceivedID, new Opponent(lastReceivedID));
-				initEnemyBidMap();
+				initEnemyMaps();
 			}
 			this.enemies.get(lastReceivedID).addToHistory(lastReceivedBidDetails);
 			
-			//Fictitious Play. Increase num of times the bid has been offered
+			// Fictitious Play. Increase num of times the bid has been offered
 			if(getUtility(lastReceivedBid) > MINIMUM_BID_UTILITY ) {
 				int i = this.enemies.get(lastReceivedID).bidMap.get(lastReceivedBid).intValue();
 				i++;
 				this.enemies.get(lastReceivedID).bidMap.replace(lastReceivedBid, new Integer(i));
+			}
+			
+			// Frequency Opponent Modeling. Increase num of times issue values have been offered
+			Iterator<Issue> it = lastReceivedBid.getIssues().iterator();
+			while(it.hasNext()) {
+				Issue is = (Issue) it.next();
+				ValueDiscrete val = (ValueDiscrete) lastReceivedBid.getValue(is.getNumber());
+				HashMap<ValueDiscrete, Integer> tempIssueVal = this.enemies.get(lastReceivedID).IssueValuesMap.get(is);
+				int i = tempIssueVal.get(val).intValue();
+				i++;
+				this.enemies.get(lastReceivedID).IssueValuesMap.get(is).replace(val, new Integer(i));
 			}
 		}
 		else if(action instanceof Accept) {
@@ -218,7 +234,8 @@ public class Agent extends AbstractNegotiationParty {
 			}
 		}
 		
-		System.out.println("ID: "+lastReceivedID+" bidhist size: "+bh.size() +" P="+belowAvgBidProbability);
+		System.out.println(this.enemies.get(lastReceivedID).IssueValuesMap);
+		// System.out.println("ID: "+lastReceivedID+" bidhist size: "+bh.size() +" P="+belowAvgBidProbability);
 		// System.out.println(belowAvgBidSet.size() );
 		// System.out.println(bh.size() );
 		// System.out.println((double)belowAvgBidSet.size() );
@@ -227,7 +244,7 @@ public class Agent extends AbstractNegotiationParty {
 	
 	
 	//Initialize the Fictitious Play bid map of last enemy.
-	public void initEnemyBidMap() {
+	public void initEnemyMaps() {
 		BidIterator bi = new BidIterator(this.utilitySpace.getDomain());
 		while(bi.hasNext()) {
 			Bid bid = bi.next();
@@ -235,21 +252,109 @@ public class Agent extends AbstractNegotiationParty {
 				this.enemies.get(lastReceivedID).bidMap.put(bid, new Integer(0));
 			}
 		}
+		// Initialize and keep each issue's value weight
+		List<Issue> issues = utilitySpace.getDomain().getIssues();
+		for(Issue tIssue : issues) {
+			IssueDiscrete tIssueDiscrete = (IssueDiscrete) tIssue;
+			this.enemies.get(lastReceivedID).issueMap.put(tIssueDiscrete, new Double(0.0));
+			
+			HashMap<ValueDiscrete, Integer> valuesMap = new HashMap<ValueDiscrete, Integer>();
+			List<ValueDiscrete> values = tIssueDiscrete.getValues();
+			for(ValueDiscrete tValue : values) {
+				valuesMap.put(tValue, new Integer(0));
+			}
+			this.enemies.get(lastReceivedID).IssueValuesMap.put(tIssueDiscrete, valuesMap);
+		}
 	}
 	
 	
 	public Bid getNextBid() {
 		if(this.getTimeLine().getTime() > CHILL_TIME + 0.2D) {
 			this.bidLimit = this.getTimeLine().getTime() >= CHILL_TIME ? Math.exp(CHILL_TIME+0.2D-this.getTimeLine().getTime()) : 0.95;
+			System.out.println(this.bidLimit);
 			if(this.bidLimit >= MINIMUM_BID_UTILITY-0.15)
 				return outcomeSpace.getBidNearUtility(this.bidLimit).getBid();
 		}
 		else {
 			this.bidLimit = this.getTimeLine().getTime() >= CHILL_TIME ? Math.exp(CHILL_TIME-this.getTimeLine().getTime()) : 0.95;
+			System.out.println(this.bidLimit);
 			if(this.bidLimit >= MINIMUM_BID_UTILITY-0.15)
 				return outcomeSpace.getBidNearUtility(this.bidLimit).getBid();
 		}
 		return BestWeCanDo;
+	}
+	
+
+	// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.
+	private Bid OfferOpponentsBestBid() {
+		Bid opBestBid = null;
+		double bestBidVal = 0;
+		Bid tempBestBid = null;
+		for(Entry<AgentID, Opponent> entry : this.enemies.entrySet()) {
+			tempBestBid = (Bid)((BidDetails) entry.getValue().getBidHistory().getBestBidDetails()).getBid();
+			if(this.getUtility(tempBestBid) > bestBidVal) {
+				bestBidVal = this.getUtility(tempBestBid);
+				opBestBid = tempBestBid;
+			}
+		}
+		if(this.getUtility(opBestBid) >= MINIMUM_BID_UTILITY) {
+			return opBestBid;
+		}
+		return BestWeCanDo;
+	}
+	
+	
+	private Bid OfferFrequencyBid() {
+		HashMap<Integer, Value> values = new HashMap<Integer, Value>();
+
+        // For every issue
+		Iterator it1 = this.utilitySpace.getDomain().getIssues().iterator();
+		while(it1.hasNext()) {
+			int maxSum = 0;
+	        IssueDiscrete isDisc = (IssueDiscrete)it1.next();
+	        
+        	// For every value of every issue
+	        Iterator it2 = isDisc.getValues().iterator();
+	        while(it2.hasNext()) {
+	        	ValueDiscrete valDisc = (ValueDiscrete) it2.next();
+	        	int tmpSum = 0;
+	        	
+	        	// And for each opponent
+	        	Iterator it3 = enemies.entrySet().iterator();
+		        while(it3.hasNext()) {
+		        	Map.Entry pair1 = (Map.Entry)it3.next();
+		        	
+		        	Opponent op = (Opponent) pair1.getValue();
+		        	HashMap<ValueDiscrete, Integer> vmap = (HashMap<ValueDiscrete, Integer>) op.IssueValuesMap.get(isDisc);
+		        	
+		        	// Get the frequency of each value
+		        	tmpSum += vmap.get(valDisc).intValue();
+		        }
+		        // On each Issue, keep the most frequent (for all opponents) value.
+		        if(tmpSum > maxSum) {
+		        	maxSum = tmpSum;
+		        	values.remove(isDisc.getNumber());
+		        	values.put(isDisc.getNumber(), valDisc);
+		        }
+	        }
+	    }
+		
+		Iterator it4 = this.utilitySpace.getDomain().getIssues().iterator();
+		// Create a bid with the most frequent values on each issue.
+		Bid freqBid = new Bid(this.utilitySpace.getDomain(), values);
+		
+		// While the most frequent bid is below the bidLimit, change its values with those of our best bid
+		while(this.getUtility(freqBid) < this.bidLimit && it4.hasNext()) {
+			Issue is = (Issue)it4.next();
+			Value v = BestWeCanDo.getValue(is.getNumber());
+			values.replace(is.getNumber(), v);
+			freqBid = new Bid(this.utilitySpace.getDomain(), values);
+		} 
+		
+		if (this.getUtility(freqBid) >= this.bidLimit)
+			return freqBid;
+		else
+			return BestWeCanDo;
 	}
 	
 	

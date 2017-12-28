@@ -7,6 +7,9 @@ import negotiator.AgentID;
 import negotiator.Bid;
 import negotiator.BidHistory;
 import negotiator.bidding.BidDetails;
+import negotiator.issue.Issue;
+import negotiator.issue.IssueDiscrete;
+import negotiator.issue.ValueDiscrete;
 import negotiator.utility.AdditiveUtilitySpace;
 import negotiator.utility.UtilitySpace;
 
@@ -16,6 +19,8 @@ public class Opponent {
 	public double acceptanceThreshold;
 	public Bid acceptedBid;
 	public HashMap<Bid, Integer> bidMap = new HashMap<Bid, Integer>();
+	public HashMap<IssueDiscrete, Double> issueMap = new HashMap<IssueDiscrete, Double>();
+	public HashMap<IssueDiscrete, HashMap<ValueDiscrete, Integer>> IssueValuesMap = new HashMap<IssueDiscrete, HashMap<ValueDiscrete, Integer>>();
 	public String opponentType = null;
 	
 	// Constructor.
