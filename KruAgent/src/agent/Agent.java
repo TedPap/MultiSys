@@ -95,46 +95,76 @@ public class Agent extends AbstractNegotiationParty {
 					return new Offer(this.getPartyId(), BestWeCanDo);
 				}
 				else if(boulwares >= 1 && conceders+coops >= 1) {
-					// TODO
-					//return new Offer(this.getPartyId(), BestWeCanDo);
+					System.out.println("NEXT BID");
+					// When time is running out chill a bit.
+					if(this.timeToChill()) {
+						// Accept any bid above a minimum threshold.
+						if(this.getUtility(lastReceivedBid) >= MINIMUM_BID_UTILITY) 
+							return new Accept(getPartyId(), lastReceivedBid);
+						
+						// Offer Generation Strategies
+						String strg = "next";
+						
+						switch (strg) {
+						case "opBest":
+							// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.				
+							Bid opBestBid = OfferOpponentsBestBid();
+							if (opBestBid != null)
+								return new Offer(this.getPartyId(), opBestBid);
+							break;
+						case "frequency":
+							Bid freqBid = OfferFrequencyBid();
+							if (freqBid != null)
+								return new Offer(this.getPartyId(), freqBid);
+							break;
+						case "next":
+							// Return next bid closest to the bidLimit
+							if(nextBid != null)
+								return new Offer(this.getPartyId(), nextBid);
+							break;
+						default:
+							// If all fails, offer a random(above a certain threshold) bid.
+							return new Offer(this.getPartyId(), randBid);
+						}
+					}
 				}
 				else {
-					// TODO
-					//return new Offer(this.getPartyId(), BestWeCanDo);
+					// When time is running out chill a bit.
+					System.out.println("MOST FREQUENT BID");
+					if(this.timeToChill()) {
+						// Accept any bid above a minimum threshold.
+						if(this.getUtility(lastReceivedBid) >= MINIMUM_BID_UTILITY) 
+							return new Accept(getPartyId(), lastReceivedBid);
+						
+						// Offer Generation Strategies
+						String strg = "frequency";
+						
+						switch (strg) {
+						case "opBest":
+							// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.				
+							Bid opBestBid = OfferOpponentsBestBid();
+							if (opBestBid != null)
+								return new Offer(this.getPartyId(), opBestBid);
+							break;
+						case "frequency":
+							Bid freqBid = OfferFrequencyBid();
+							if (freqBid != null)
+								return new Offer(this.getPartyId(), freqBid);
+							break;
+						case "next":
+							// Return next bid closest to the bidLimit
+							if(nextBid != null)
+								return new Offer(this.getPartyId(), nextBid);
+							break;
+						default:
+							// If all fails, offer a random(above a certain threshold) bid.
+							return new Offer(this.getPartyId(), randBid);
+						}
+					}
 				}
 			}
 			
-			// When time is running out chill a bit.
-			if(this.timeToChill()) {
-				// Accept any bid above a minimum threshold.
-				if(this.getUtility(lastReceivedBid) >= MINIMUM_BID_UTILITY) 
-					return new Accept(getPartyId(), lastReceivedBid);
-				
-				// Offer Generation Strategies
-				String strg = "frequency";
-				
-				switch (strg) {
-				case "opBest":
-					// Offer the opponents' best bid if greater than MINIMUM_BID_UTILITY.				
-					Bid opBestBid = OfferOpponentsBestBid();
-					if (opBestBid != null)
-						return new Offer(this.getPartyId(), opBestBid);
-					break;
-				case "frequency":
-					Bid freqBid = OfferFrequencyBid();
-					if (freqBid != null)
-						return new Offer(this.getPartyId(), freqBid);
-					break;
-				case "next":
-					// Return next bid closest to the bidLimit
-					if(nextBid != null)
-						return new Offer(this.getPartyId(), nextBid);
-					break;
-				default:
-					// If all fails, offer a random(above a certain threshold) bid.
-					return new Offer(this.getPartyId(), randBid);
-				}
-			}
+			
 		}
 		return new Offer(this.getPartyId(), BestWeCanDo);
 	}
@@ -233,8 +263,8 @@ public class Agent extends AbstractNegotiationParty {
 				conceders += 1;
 			}
 		}
-		
-		System.out.println(this.enemies.get(lastReceivedID).IssueValuesMap);
+		System.out.println(this.enemies.get(lastReceivedID).opponentType);
+		// System.out.println(this.enemies.get(lastReceivedID).IssueValuesMap);
 		// System.out.println("ID: "+lastReceivedID+" bidhist size: "+bh.size() +" P="+belowAvgBidProbability);
 		// System.out.println(belowAvgBidSet.size() );
 		// System.out.println(bh.size() );
@@ -271,13 +301,13 @@ public class Agent extends AbstractNegotiationParty {
 	public Bid getNextBid() {
 		if(this.getTimeLine().getTime() > CHILL_TIME + 0.2D) {
 			this.bidLimit = this.getTimeLine().getTime() >= CHILL_TIME ? Math.exp(CHILL_TIME+0.2D-this.getTimeLine().getTime()) : 0.95;
-			System.out.println(this.bidLimit);
+			// System.out.println(this.bidLimit);
 			if(this.bidLimit >= MINIMUM_BID_UTILITY-0.15)
 				return outcomeSpace.getBidNearUtility(this.bidLimit).getBid();
 		}
 		else {
 			this.bidLimit = this.getTimeLine().getTime() >= CHILL_TIME ? Math.exp(CHILL_TIME-this.getTimeLine().getTime()) : 0.95;
-			System.out.println(this.bidLimit);
+			// System.out.println(this.bidLimit);
 			if(this.bidLimit >= MINIMUM_BID_UTILITY-0.15)
 				return outcomeSpace.getBidNearUtility(this.bidLimit).getBid();
 		}
@@ -379,7 +409,7 @@ public class Agent extends AbstractNegotiationParty {
 	
 	
 	public String getDescription() {
-		return "FART";
+		return "MAS 2017-2018 KruAgent";
 	}
 
 }
